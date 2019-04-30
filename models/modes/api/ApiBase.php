@@ -1,6 +1,6 @@
 <?php
 
-    namespace models;
+    namespace models\modes\api;
 
     use models\common\error\Interruption;
     use models\common\param\Args;
@@ -11,7 +11,7 @@
      * @package models
      * 接口具体方法的抽你类
      */
-    abstract class Action {
+    abstract class ApiBase {
         protected $args           = null;
         public    $uniqueId       = '';
         private   $__detailCode   = false;
@@ -23,6 +23,10 @@
         private   $__debug        = false;
         private   $__apiName      = '';
 
+        public function model(){
+            $className=static::class;
+            return new $className();
+        }
         public function init($param = []) {
             $this->args      = new Args($param);
             $this->__apiName = $this->args->tryGetString('method');
@@ -55,11 +59,7 @@
 
         public abstract function run();
 
-        public abstract function getCacheId();
 
-        public abstract function setCache();
-
-        public abstract function delCache();
 
         /**
          * @param string $detailCode

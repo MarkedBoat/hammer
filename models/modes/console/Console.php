@@ -1,8 +1,9 @@
 <?php
 
-    namespace models;
+    namespace models\modes\console;
 
     use models\common\error\ConsoleError;
+    use models\Sys;
 
     class Console {
         private $runner  = '';
@@ -58,7 +59,7 @@
                     $this->method,
                 ), $args);
             } catch (\Exception $e) {
-                $str="\n>>>>>>>\tConsoleError:" . $e->getMessage() . '>' . $e->getFile() . '>' . $e->getLine() . "\n";
+                $str = "\n>>>>>>>\tConsoleError:" . $e->getMessage() . '>' . $e->getFile() . '>' . $e->getLine() . "\n";
                 echo $str;
                 if (method_exists($e, 'getDebugMsg')) {
                     echo $e->getDebugMsg() . "\n";
@@ -67,7 +68,7 @@
                 if (method_exists($e, 'getInfos')) {
                     var_dump($e->getInfos());
                 }
-                $str2= $e->getTraceAsString();
+                $str2 = $e->getTraceAsString();
                 echo $str2;
                 file_put_contents(self::getErrorLogFile(), date('Y-m-d H:i:s', time()) . "\t" . self::$cmd . "\n{$str}{$str2}\n", FILE_APPEND);
                 //var_dump(debug_backtrace());

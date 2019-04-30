@@ -7,36 +7,44 @@
      * Time: 11:01
      */
 
-    namespace models;
+    namespace models\modes\console;
 
     use models\common\error\Interruption;
+    use models\common\param\Args;
 
-    class CmdBase extends Action {
-        private $__planId   = '';
-        private $__cfgRedis = false;
+    class CmdBase {
+        protected $args       = null;
+        private   $__planId   = '';
+        private   $__cfgRedis = false;
 
         public static function getClassName() {
             return __CLASS__;
         }
 
         public function init($param = []) {
-            parent::init($param);
+            $this->args     = new Args($param);
             $this->__planId = $this->getArgs()->tryGetString('planId');
         }
 
+        public function setArgs(Args $args) {
+            $this->args = $args;
+            return $this;
+        }
+
+        /**
+         * @return \models\common\param\Args
+         */
+        public function getArgs() {
+            return $this->args;
+        }
+
+        public function initCmd(Args $args) {
+            $this->setArgs($args);
+            $this->run();
+        }
+
+
         public function run() {
-
-        }
-
-        public function getCacheId() {
-
-        }
-
-        public function setCache() {
-
-        }
-
-        public function delCache() {
 
         }
 

@@ -21,26 +21,21 @@
         public static  $isDebug          = false;
         public static  $hasOut           = false;
         public static  $getTuiObj        = null;
-        private        $requestArgs      = array();
         public static  $args             = [];
         public static  $requstArgs       = [];
         public static  $runMode          = 'web';
         private static $debugInfos       = [];
         public static  $versions         = 0;
-        private static $tplClassName     = '';
         public static  $actErrorHttpCode = 400;
         public static  $textOutPut       = false;
         public static  $configs          = [];
         public static  $cases            = [];//实例
-        const TableName = '{album}';
-        private $__db = null;
 
         public static $dbRead              = null;
         public static $dbWrite             = null;
         public static $dbWriteTransactions = null;
         public static $dbConfigs           = [];
 
-        public static  $redisServer  = null;
         protected      $params       = [];
         public         $methodName   = '';
         public         $version      = '2.0';
@@ -66,24 +61,6 @@
 
         public function init() {
 
-        }
-
-        public function setParam($param) {
-            $this->params     = $param;
-            $this->methodName = ParamNew::getStringNotNull($this->params, 'method');
-            if (ParamNew::tryGetString($this->params, 'version'))
-                $this->version = ParamNew::tryGetString($this->params, 'version');
-        }
-
-        public function getCache($key = '') {
-            self::addDebugInfos('try cache:' . microtime(), $key);
-            if (isset($this->params['nocache']))
-                return false;
-            return MCDcache::model()->get($this->methodName . '.' . $key);
-        }
-
-        public function setCache($key, $data, $expires = 3600) {
-            return MCDcache::model()->set($this->methodName . '.' . $key, $data, $expires);
         }
 
         public static function getReadDb() {
@@ -133,18 +110,6 @@
             return static::$dbWrite;
         }
 
-        public static function getNewWriteDb() {
-            if (is_null(static::$dbWrite)) {
-                self::getDbConfig();
-                if (isset(self::$dbConfigs['bftv'])) {
-                    return MysqlPdo::configDb(self::$dbConfigs['bftv'], true);
-                } else {
-                    throw new DbError('DB配置错误', DbError::ERROR);
-                }
-            }
-
-            return static::$dbWrite;
-        }
 
         /**
          * @return null
@@ -177,14 +142,6 @@
             return include self::getCfgDir() . 'db.php';
         }
 
-
-        public static function getQueueRedis() {
-            if (is_null(self::$redisServer)) {
-                self::$redisServer = new \Redis();
-                self::$redisServer->connect(self::redisServerHost, self::redisServerPort);
-            }
-            return self::$redisServer;
-        }
 
         public static function getCfgs() {
             return self::$configs;
@@ -277,160 +234,6 @@
             return false;
         }
 
-        public function getConnection() {
-
-        }
-
-        public static function getSqlSetStr($keys, $bindKey = 0) {
-            $str = [];
-            foreach ($keys as $realKey) {
-                if (isset(static::$__attributes[$realKey])) {
-                    $str[] = "`$realKey`=:bind_$bindKey" . "_$realKey";
-                } else {
-                    throw new \Exception('key not exist)' . $realKey);
-                }
-            }
-            return join(',', $str);
-        }
-
-        public static function getSqlConditionStr($keys, $bindKey = 0) {
-            $str = [];
-            foreach ($keys as $realKey) {
-                if (isset(static::$__attributes[$realKey])) {
-                    $str[] = "`$realKey`=:bind_$bindKey" . "_$realKey";
-                } else {
-                    throw new \Exception('key not exist)' . $realKey);
-                }
-            }
-            return join(' and ', $str);
-        }
-
-        public static function formatAttribute($keyName, $value, $fakeKeyName = '') {
-            if (isset(static::$__attributes[$keyName])) {
-                $attribute = static::$__attributes[$keyName];
-            } else {
-                throw new \Exception($fakeKeyName . ' not exist,12');
-            }
-
-            switch ($attribute['type']) {
-                case 'int':
-                    $value = intval($value);
-                    break;
-                default:
-                    $value = htmlspecialchars(trim($value));
-                    break;
-            }
-            if ($attribute['length'] && mb_strlen($value, 'UTF-8') > $attribute['length'])
-                throw new \Exception($fakeKeyName . '字段长度越界' . mb_strlen($value, 'UTF-8'));
-            return $value;
-        }
-
-        public static function checkNecessaryKey($param, $necessaryKeys) {
-            $keys = array_diff($necessaryKeys, array_keys($param));
-            $r    = count($keys) ? true : false;
-            if ($r === true)
-                throw new \Exception('lost necessary key:' . join(',', $keys), Error::ARGS_LOST);
-            return $r;
-        }
-
-        public static function checkRequireKey($param, $necessaryKeys) {
-            $r        = false;
-            $emptyKey = '';
-            foreach ($necessaryKeys as $k) {
-                if (!isset($param[$k]) || empty($param[$k])) {
-                    $r        = true;
-                    $emptyKey = $k;
-                    break;
-                }
-            }
-            if ($r === true)
-                throw new \Exception('cant not be empty key:' . $emptyKey, Error::ARGS_LOST);
-            return $r;
-        }
-
-        public static function requireKey($param, $necessaryKeys, $noNull = true) {
-            $r        = false;
-            $emptyKey = '';
-            foreach ($necessaryKeys as $k) {
-                if (!isset($param[$k]) || ($noNull && empty($param[$k]))) {
-                    $r        = true;
-                    $emptyKey = $k;
-                    break;
-                }
-            }
-            if ($r === true)
-                throw new ArgsError('参数必须:' . $emptyKey, ArgsError::ERROR);
-            return $r;
-        }
-
-        public static function requireArgs($param, $args) {
-            $r        = false;
-            $emptyKey = '';
-            foreach ($args as $k) {
-                if (!isset($param[$k])) {
-                    $r        = true;
-                    $emptyKey = $k;
-                    break;
-                }
-            }
-            if ($r === true)
-                throw new ArgsError('参数必须:' . $emptyKey, ArgsError::ERROR);
-            return $r;
-        }
-
-        public static function requireArgsNotNull($param, $args) {
-            $r        = false;
-            $emptyKey = '';
-            foreach ($args as $k) {
-                if (!isset($param[$k]) || empty($param[$k])) {
-                    $r        = true;
-                    $emptyKey = $k;
-                    break;
-                }
-            }
-            if ($r === true)
-                throw new ArgsError('参数不能为空:' . $emptyKey, ArgsError::ERROR);
-            return $r;
-        }
-
-        public static function needKey($param, $necessaryKeys) {
-            $keys = array_diff($necessaryKeys, array_keys($param));
-            $r    = count($keys) ? true : false;
-            if ($r === true)
-                throw new ArgsError('不能为空:' . join(',', $keys), ArgsError::ERROR);
-            return $r;
-        }
-
-        public static function getBindDataWithTrueKey($param, $dataKey, $bindKey = 0) {
-            $replaced = [];
-            foreach ($dataKey as $postKey => $realKey) {
-                if (isset($param[$postKey]))
-                    $replaced[':bind_' . $bindKey . '_' . $realKey] = static::formatAttribute($realKey, $param[$postKey], $postKey);
-            }
-            return $replaced;
-        }
-
-        public static function getOne($param, $keys) {
-            $result = false;
-            $k      = '';
-            foreach ($keys as $key)
-                if (isset($param[$key])) {
-                    $result = true;
-                    $k      = $key;
-                    break;
-                }
-            if ($result === false)
-                throw new \Exception(join(',', $keys) . '必须要填写一个', Error::MSG);
-            return $k;
-        }
-
-        public static function getIntParam($param, $key) {
-
-        }
-
-        public static function getStringParam($param, $key) {
-
-        }
 
         public static function getRemoteIp() {
             return isset($_SERVER['REMOTE_ADDR']) ? $_SERVER['REMOTE_ADDR'] : '';

@@ -6,13 +6,13 @@
      * Time: 15:57
      */
 
-    namespace projects\example\api\actions;
+    namespace projects\example\api\apis;
 
 
-    use models\Action;
+    use models\common\api\ApiBase;
     use models\Sys;
 
-    class ActionTables extends Action {
+    class ApiTables extends ApiBase {
         public static function getClassName() {
             return __CLASS__;
         }
@@ -23,6 +23,7 @@
         }
 
         public function run() {
+            return 'ok';
             $database = $this->getArgs()->getStringNotNull('database');
             $ip       = Sys::getRemoteIp();
             return [
@@ -31,15 +32,5 @@
             ];
         }
 
-        public function getCacheId() {
 
-        }
-
-        public function setCache() {
-
-        }
-
-        public function delCache() {
-
-        }
     }
